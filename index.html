@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blackjack Premium Pro & Simulator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #1c1e21;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            margin: 0 0 5px 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 2.2rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            color: #f1c40f;
+            text-align: center;
+        }
+
+        #placar {
+            font-size: 14px;
+            color: #bdc3c7;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        #resultado {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            min-height: 60px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        /* Mesa de Cassino */
+        .mesa {
+            display: flex;
+            width: 100%;
+            max-width: 1000px;
+            min-height: 460px;
+            background: radial-gradient(circle, #1a5e3a 0%, #0d3822 100%);
+            border: 12px solid #5c3a21;
+            border-radius: 20px;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.8), 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Linha divisória vertical */
+        .mesa::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 2px;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.1) 50%, rgba(255,255,255,0));
+            transform: translateX(-50%);
+            z-index: 1;
+        }
+
+        .lado {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 2;
+            position: relative;
+        }
+
+        .topo-lado {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        .titulo-lado {
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .pontos { color: #f1c40f; }
+
+        .indicador-mao {
+            font-size: 12px;
+            color: #f1c40f;
+            margin-bottom: 8px;
+            min-height: 16px;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+
+        .cartas-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 160px;
+            width: 100%;
+            padding: 10px 20px;
+            box-sizing: border-box;
+        }
+
+        /* Cartas com Margem Negativa para Overlap Controlado */
+        .carta {
+            width: 90px;
+            height: 130px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: -2px 4px 8px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 8px;
+            position: relative;
+            user-select: none;
+            animation: brotar 0.25s ease-out forwards;
+        }
+
+        /* Aplica efeito cascata a partir da segunda carta */
+        .carta + .carta {
+            margin-left: -35px;
+        }
+
+        @keyframes brotar {
+            from { transform: translateY(15px) scale(0.85); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        .carta.vermelha { color: #e74c3c; }
+        .carta.preta { color: #2c3e50; }
+
+        .carta .canto {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 14px;
+            font-weight: bold;
+            line-height: 1.1;
+        }
+        .carta .canto.inferior { transform: rotate(180deg); }
+
+        .carta .naipe-centro {
+            font-size: 34px;
+            text-align: center;
+            align-self: center;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .carta.oculta {
+            background: repeating-linear-gradient(45deg, #c0392b, #c0392b 10px, #962d22 10px, #962d22 20px);
+            border: 4px solid #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+        .carta.oculta * { display: none; }
+
+        .botoes-container {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            max-width: 280px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 5px;
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            background-color: #ffffff;
+            color: #2c3e50;
+            border: 2px solid #2c3e50;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .btn:hover:not(:disabled) {
+            background-color: #2c3e50;
+            color: #ffffff;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background-color: #bdc3c7;
+            border-color: #bdc3c7;
+            color: #7f8c8d;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        #btn-reiniciar {
+            margin-top: 15px;
+            padding: 12px 40px;
+            background-color: #f1c40f;
+            color: #1c1e21;
+            border: none;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(241, 196, 15, 0.3);
+            display: none;
+            transition: all 0.2s;
+        }
+        #btn-reiniciar:hover {
+            background-color: #f39c12;
+            transform: scale(1.03);
+        }
+
+        /* Dashboard Flexbox Responsivo */
+        .dashboard-container {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            max-width: 1000px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .painel {
+            flex: 1;
+            min-width: 320px;
+            background: #2c3e50;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.25);
+            border: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .painel h2 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            color: #f1c40f;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+            padding-bottom: 6px;
+        }
+
+        .painel-header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+            padding-bottom: 6px;
+            margin-bottom: 15px;
+        }
+
+        .painel-header-flex h2 {
+            margin: 0;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .btn-exportar {
+            background: #2ecc71;
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-exportar:hover:not(:disabled) { background: #27ae60; }
+        .btn-exportar:disabled { background: #7f8c8d; cursor: not-allowed; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .stat-box {
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-box .label { font-size: 11px; color: #bdc3c7; text-transform: uppercase; }
+        .stat-box .value { font-size: 18px; font-weight: bold; margin-top: 4px; color: #fff; }
+
+        .simular-control {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 15px;
+            background: rgba(0, 0, 0, 0.15);
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .simular-control input {
+            padding: 8px;
+            border-radius: 6px;
+            border: none;
+            font-size: 15px;
+            text-align: center;
+            background: #1c1e21;
+            color: #fff;
+            font-weight: bold;
+            width: 100%;
+        }
+
+        .btn-simular {
+            background: #e67e22;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-simular:hover:not(:disabled) { background: #d35400; }
+        .btn-simular:disabled { background: #7f8c8d; cursor: not-allowed; }
+
+        .historico-lista {
+            max-height: 275px;
+            overflow-y: auto;
+            padding-right: 5px;
+            flex-grow: 1;
+        }
+
+        .historico-item {
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .hist-vitoria { border-left: 5px solid #2ecc71; }
+        .hist-derrota { border-left: 5px solid #e74c3c; }
+        .hist-empate { border-left: 5px solid #f1c40f; }
+
+        .hist-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .hist-cards {
+            color: #bdc3c7;
+            font-family: monospace;
+            font-size: 11px;
+            background: rgba(0,0,0,0.25);
+            padding: 3px 6px;
+            border-radius: 4px;
+            margin-top: 3px;
+        }
+
+        #loading-simulacao {
+            font-size: 12px;
+            color: #e67e22;
+            text-align: center;
+            font-weight: bold;
+            min-height: 16px;
+        }
+
+        /* Custom Scrollbar para Painel Elegante */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+    </style>
+</head>
+<body>
+
+    <h1>Blackjack</h1>
+    <div id="placar">Vitórias: 0 | Derrotas: 0 | Empates: 0</div>
+    <div id="resultado"></div>
+
+    <div class="mesa">
+        <!-- LADO DO JOGADOR -->
+        <div class="lado" id="lado-jogador">
+            <div class="topo-lado">
+                <div class="indicador-mao" id="indicador-mao"></div>
+                <div class="cartas-container" id="cartas-jogador"></div>
+                <div class="titulo-lado">EU <span id="pontos-jogador" class="pontos"></span></div>
+            </div>
+            
+            <div class="botoes-container">
+                <button class="btn" id="btn-comprar" onclick="comprar()">Comprar</button>
+                <button class="btn" id="btn-passar" onclick="passar()">Passar</button>
+                <button class="btn" id="btn-split" onclick="splitar()">Split</button>
+            </div>
+        </div>
+
+        <!-- LADO DO DEALER -->
+        <div class="lado" id="lado-dealer">
+            <div class="topo-lado">
+                <div class="cartas-container" id="cartas-dealer"></div>
+                <div class="titulo-lado">DEALER <span id="pontos-dealer" class="pontos"></span></div>
+            </div>
+            <div></div>
+        </div>
+    </div>
+
+    <button id="btn-reiniciar" onclick="iniciarJogo()">Jogar Novamente</button>
+
+    <!-- CONTAINER DA CENTRAL DE ESTATÍSTICAS E HISTÓRICO -->
+    <div class="dashboard-container">
+        <!-- Painel de Estatísticas -->
+        <div class="painel">
+            <h2>Estatísticas e Controle</h2>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="label">Total Jogos</div>
+                    <div class="value" id="stat-total">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Win Rate</div>
+                    <div class="value" id="stat-winrate">0%</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Max Win Streak</div>
+                    <div class="value" id="stat-max-win">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Max Loss Streak</div>
+                    <div class="value" id="stat-max-loss">0</div>
+                </div>
+            </div>
+
+            <div class="simular-control">
+                <label style="font-size:11px; color:#bdc3c7; text-transform:uppercase; font-weight: bold;">Simulador Fast-Forward</label>
+                <input type="number" id="input-simulacao" value="1000" min="1" max="999999">
+                <button class="btn-simular" id="btn-rodar-simulacao" onclick="dispararSimulacao()">Simular Mãos</button>
+                <div id="loading-simulacao"></div>
+            </div>
+        </div>
+
+        <!-- Painel de Histórico Estruturado -->
+        <div class="painel">
+            <div class="painel-header-flex">
+                <h2>Histórico</h2>
+                <button class="btn-exportar" id="btn-csv" onclick="exportarParaCSV()" disabled>Exportar CSV</button>
+            </div>
+            <div class="historico-lista" id="historico-lista">
+                <div style="color:#7f8c8d; text-align:center; padding-top:60px; font-size:13px;">Nenhum registro gerado nesta sessão.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const valoresCartas = {'2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 10, 'Q': 10, 'K': 10, 'A': 11};
+        const naipes = [
+            { simbolo: '♠', classe: 'preta' },
+            { simbolo: '♥', classe: 'vermelha' },
+            { simbolo: '♦', classe: 'vermelha' },
+            { simbolo: '♣', classe: 'preta' }
+        ];
+
+        const LIMITE_RESHUFFLE = 15;
+        let baralho = [];
+        let maosJogador = [];    
+        let indiceMaoAtual = 0;
+        let maoDealer = [];
+        let jogoAtivo = true;
+
+        let placar = { vitorias: 0, derrotas: 0, empates: 0 };
+
+        // Estrutura unificada de Histórico Completo
+        let historicoCompleto = []; 
+        let streakAtualWin = 0;
+        let streakAtualLoss = 0;
+        let maxWinStreak = 0;
+        let maxLossStreak = 0;
+
+        function criarBaralho() {
+            const modelosCartas = Object.keys(valoresCartas);
+            baralho = [];
+            naipes.forEach(naipe => {
+                modelosCartas.forEach(valor => {
+                    baralho.push({ valor: valor, simbolo: naipe.simbolo, classe: naipe.classe });
+                });
+            });
+            for (let i = baralho.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [baralho[i], baralho[j]] = [baralho[j], baralho[i]];
+            }
+        }
+
+        function comprarCarta() {
+            if (baralho.length < LIMITE_RESHUFFLE) {
+                criarBaralho();
+            }
+            return baralho.pop();
+        }
+
+        function calcularPontos(mao) {
+            let pontos = mao.reduce((total, carta) => total + valoresCartas[carta.valor], 0);
+            let aces = mao.filter(carta => carta.valor === 'A').length;
+            while (pontos > 21 && aces > 0) {
+                pontos -= 10;
+                aces--;
+            }
+            return pontos;
+        }
+
+        function podeSplitar(mao) {
+            return mao.length === 2 && mao[0].valor === mao[1].valor;
+        }
+
+        function gerarHtmlCarta(carta, oculta = false) {
+            if (oculta) return `<div class="carta oculta"></div>`;
+            return `
+                <div class="carta ${carta.classe}">
+                    <div class="canto superior">
+                        <span>${carta.valor}</span>
+                        <span>${carta.simbolo}</span>
+                    </div>
+                    <div class="naipe-centro">${carta.simbolo}</div>
+                    <div class="canto inferior">
+                        <span>${carta.valor}</span>
+                        <span>${carta.simbolo}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function atualizarMesa(esconderDealer = true) {
+            const mao = maosJogador[indiceMaoAtual];
+            const containerJogador = document.getElementById('cartas-jogador');
+            containerJogador.innerHTML = '';
+            mao.cartas.forEach(carta => { containerJogador.innerHTML += gerarHtmlCarta(carta); });
+            document.getElementById('pontos-jogador').innerText = `(${calcularPontos(mao.cartas)})`;
+
+            const indicador = document.getElementById('indicador-mao');
+            indicador.innerText = maosJogador.length > 1 ? `MÃO ${indiceMaoAtual + 1} DE ${maosJogador.length}` : '';
+
+            const containerDealer = document.getElementById('cartas-dealer');
+            containerDealer.innerHTML = '';
+            maoDealer.forEach((carta, index) => {
+                if (index === 1 && esconderDealer) {
+                    containerDealer.innerHTML += gerarHtmlCarta(carta, true);
+                } else {
+                    containerDealer.innerHTML += gerarHtmlCarta(carta);
+                }
+            });
+
+            if (esconderDealer) {
+                document.getElementById('pontos-dealer').innerText = '';
+            } else {
+                document.getElementById('pontos-dealer').innerText = `(${calcularPontos(maoDealer)})`;
+            }
+            document.getElementById('btn-split').disabled = !jogoAtivo || !podeSplitar(mao.cartas);
+        }
+
+        function atualizarPlacar() {
+            document.getElementById('placar').innerText = `Vitórias: ${placar.vitorias} | Derrotas: ${placar.derrotas} | Empates: ${placar.empates}`;
+            
+            const total = placar.vitorias + placar.derrotas + placar.empates;
+            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-winrate').innerText = total > 0 ? ((placar.vitorias / total) * 100).toFixed(1) + '%' : '0%';
+            document.getElementById('stat-max-win').innerText = maxWinStreak;
+            document.getElementById('stat-max-loss').innerText = maxLossStreak;
+
+            document.getElementById('btn-csv').disabled = total === 0;
+        }
+
+        function formatarCartasParaTexto(listaCartas) {
+            return listaCartas.map(c => `${c.valor}${c.simbolo}`).join(' ');
+        }
+
+        function atualizarPainelHistorial() {
+            const container = document.getElementById('historico-lista');
+            if(historicoCompleto.length === 0) return;
+            
+            container.innerHTML = '';
+            // Renderiza apenas as últimas 50 ocorrências na interface gráfica para evitar gargalo de processamento do navegador
+            const exibidas = historicoCompleto.slice(-50).reverse();
+            
+            exibidas.forEach(reg => {
+                let classeStatus = 'hist-empate';
+                let stringStatus = 'EMPATE';
+                if(reg.res === 'Vitoria') { classeStatus = 'hist-vitoria'; stringStatus = 'VITÓRIA'; }
+                if(reg.res === 'Derrota') { classeStatus = 'hist-derrota'; stringStatus = 'DERROTA'; }
+                
+                container.innerHTML += `
+                    <div class="historico-item ${classeStatus}">
+                        <div class="hist-header">
+                            <span>[${reg.origem}] ${reg.tipo}</span>
+                            <span>${stringStatus}</span>
+                        </div>
+                        <div>${reg.detalhe}</div>
+                        <div class="hist-cards">Suas Cartas: [ ${reg.cartasJ} ] | Dealer: [ ${reg.cartasD} ]</div>
+                    </div>
+                `;
+            });
+        }
+
+        function exportarParaCSV() {
+            if (historicoCompleto.length === 0) return;
+
+            // Cabeçalho do arquivo CSV
+            let csvConteudo = "\uFEFF"; // Adiciona BOM para caracteres especiais como naipes funcionarem no Excel
+            csvConteudo += "Origem;Tipo;Resultado;Detalhes;Cartas Jogador;Cartas Dealer\n";
+
+            // Transforma o array global de histórico completo em linhas do CSV
+            historicoCompleto.forEach(reg => {
+                let linha = `${reg.origem};${reg.tipo};${reg.res};${reg.detalhe};${reg.cartasJ};${reg.cartasD}`;
+                csvConteudo += linha + "\n";
+            });
+
+            // Geração física do download via Blob do Navegador
+            const blob = new Blob([csvConteudo], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const linkDownload = document.createElement("a");
+            linkDownload.setAttribute("href", url);
+            linkDownload.setAttribute("download", `blackjack_historico_${Date.now()}.csv`);
+            document.body.appendChild(linkDownload);
+            linkDownload.click();
+            document.body.removeChild(linkDownload);
+        }
+
+        function registrarFimDeRodada(res) {
+            if (res === 'Vitoria') {
+                streakAtualWin++;
+                streakAtualLoss = 0;
+                if (streakAtualWin > maxWinStreak) maxWinStreak = streakAtualWin;
+            } else if (res === 'Derrota') {
+                streakAtualLoss++;
+                streakAtualWin = 0;
+                if (streakAtualLoss > maxLossStreak) maxLossStreak = streakAtualLoss;
+            } else {
+                streakAtualWin = 0;
+                streakAtualLoss = 0;
+            }
+        }
+
+        function iniciarJogo() {
+            jogoAtivo = true;
+            document.getElementById('resultado').innerHTML = '';
+            document.getElementById('btn-reiniciar').style.display = 'none';
+            document.getElementById('btn-comprar').disabled = false;
+            document.getElementById('btn-passar').disabled = false;
+
+            if (baralho.length === 0) {
+                criarBaralho();
+            }
+
+            maosJogador = [{ cartas: [comprarCarta(), comprarCarta()], finalizada: false, resultado: null }];
+            indiceMaoAtual = 0;
+            maoDealer = [comprarCarta(), comprarCarta()];
+
+            atualizarMesa(true);
+            verificarEstadoMaoAtual();
+        }
+
+        function verificarEstadoMaoAtual() {
+            const mao = maosJogador[indiceMaoAtual];
+            const pontos = calcularPontos(mao.cartas);
+            const ehNatural = mao.cartas.length === 2 && pontos === 21 && maosJogador.length === 1;
+
+            if (ehNatural) {
+                mao.finalizada = true;
+                mao.resultado = 'blackjack';
+                avancarOuFecharRodada();
+            } else if (pontos >= 21) {
+                mao.finalizada = true;
+                avancarOuFecharRodada();
+            }
+        }
+
+        function comprar() {
+            if (!jogoAtivo) return;
+            const mao = maosJogador[indiceMaoAtual];
+            mao.cartas.push(comprarCarta());
+            atualizarMesa(true);
+            verificarEstadoMaoAtual();
+        }
+
+        function pasar() {
+            // Alias para suportar clique
+            passar();
+        }
+
+        function passar() {
+            if (!jogoAtivo) return;
+            maosJogador[indiceMaoAtual].finalizada = true;
+            avancarOuFecharRodada();
+        }
+
+        function splitar() {
+            if (!jogoAtivo) return;
+            const mao = maosJogador[indiceMaoAtual];
+            if (!podeSplitar(mao.cartas)) return;
+
+            const novaMao1 = { cartas: [mao.cartas[0], comprarCarta()], finalizada: false, resultado: null };
+            const novaMao2 = { cartas: [mao.cartas[1], comprarCarta()], finalizada: false, resultado: null };
+
+            maosJogador.splice(indiceMaoAtual, 1, novaMao1, novaMao2);
+            atualizarMesa(true);
+            verificarEstadoMaoAtual();
+        }
+
+        function avancarOuFecharRodada() {
+            const proximaExiste = indiceMaoAtual + 1 < maosJogador.length;
+            if (proximaExiste) {
+                indiceMaoAtual++;
+                atualizarMesa(true);
+                verificarEstadoMaoAtual();
+            } else {
+                jogarDealer();
+            }
+        }
+
+        function jogarDealer() {
+            jogoAtivo = false;
+            document.getElementById('btn-comprar').disabled = true;
+            document.getElementById('btn-passar').disabled = true;
+            document.getElementById('btn-split').disabled = true;
+
+            const algumaManteveJogo = maosJogador.some(mao => calcularPontos(mao.cartas) <= 21);
+            if (algumaManteveJogo) {
+                while (calcularPontos(maoDealer) < 17) {
+                    maoDealer.push(comprarCarta());
+                }
+            }
+
+            atualizarMesa(false);
+            determinarResultado();
+        }
+
+        function determinarResultado() {
+            const pontosDealer = calcularPontos(maoDealer);
+            const resultadoDiv = document.getElementById('resultado');
+            const linhas = [];
+
+            maosJogador.forEach((mao, i) => {
+                const pontosJogador = calcularPontos(mao.cartas);
+                const prefixo = maosJogador.length > 1 ? `Mão ${i + 1}: ` : '';
+                let tipoMaoLabel = maosJogador.length > 1 ? `Mão Split ${i+1}` : 'Mão Padrão';
+                let resFinal = 'Empate';
+                let txtDetalhe = '';
+
+                if (mao.resultado === 'blackjack' && pontosDealer !== 21) {
+                    linhas.push(`<span style='color: #2ecc71;'>${prefixo}🂡 Blackjack! Você ganhou!</span>`);
+                    placar.vitorias++;
+                    resFinal = 'Vitoria';
+                    txtDetalhe = `BJ (21) vs Dealer (${pontosDealer})`;
+                } else if (pontosJogador > 21) {
+                    linhas.push(`<span style='color: #e74c3c;'>${prefixo}❌ Estourou. Você perdeu.</span>`);
+                    placar.derrotas++;
+                    resFinal = 'Derrota';
+                    txtDetalhe = `Estourou (${pontosJogador}) vs Dealer (${pontosDealer})`;
+                } else if (pontosDealer > 21) {
+                    linhas.push(`<span style='color: #2ecc71;'>${prefixo}🎉 Dealer estourou. Você ganhou!</span>`);
+                    placar.vitorias++;
+                    resFinal = 'Vitoria';
+                    txtDetalhe = `Jogador (${pontosJogador}) vs Dealer Estourou (${pontosDealer})`;
+                } else if (pontosJogador > pontosDealer) {
+                    linhas.push(`<span style='color: #2ecc71;'>${prefixo}🎉 Você ganhou!</span>`);
+                    placar.vitorias++;
+                    resFinal = 'Vitoria';
+                    txtDetalhe = `Jogador (${pontosJogador}) vs Dealer (${pontosDealer})`;
+                } else if (pontosJogador < pontosDealer) {
+                    linhas.push(`<span style='color: #e74c3c;'>${prefixo}❌ Você perdeu!</span>`);
+                    placar.derrotas++;
+                    resFinal = 'Derrota';
+                    txtDetalhe = `Jogador (${pontosJogador}) vs Dealer (${pontosDealer})`;
+                } else {
+                    linhas.push(`<span style='color: #f1c40f;'>${prefixo}🤝 Empate!</span>`);
+                    placar.empates++;
+                    resFinal = 'Empate';
+                    txtDetalhe = `Empate mútuo em ${pontosJogador}`;
+                }
+
+                registrarFimDeRodada(resFinal);
+
+                // Salvando no Histórico com armazenamento completo de cartas clonadas
+                historicoCompleto.push({
+                    origem: 'REAL',
+                    tipo: tipoMaoLabel,
+                    detalhe: txtDetalhe,
+                    res: resFinal,
+                    cartasJ: formatarCartasParaTexto([...mao.cartas]),
+                    cartasD: formatarCartasParaTexto([...maoDealer])
+                });
+            });
+
+            resultadoDiv.innerHTML = linhas.join('<br>');
+            atualizarPlacar();
+            atualizarPainelHistorial();
+
+            document.getElementById('btn-reiniciar').style.display = 'block';
+        }
+
+        /* ENGINE DE SIMULAÇÃO EVOLUÍDO (Fast-Forward Assíncrono com Histórico) */
+        function dispararSimulacao() {
+            const input = document.getElementById('input-simulacao');
+            let qtd = parseInt(input.value);
+
+            if (isNaN(qtd) || qtd < 1) qtd = 1;
+            if (qtd > 999999) qtd = 999999;
+            input.value = qtd;
+
+            document.getElementById('btn-rodar-simulacao').disabled = true;
+            document.getElementById('btn-comprar').disabled = true;
+            document.getElementById('btn-passar').disabled = true;
+            
+            let processados = 0;
+            const tamanhoLote = 25000; 
+            const statusDiv = document.getElementById('loading-simulacao');
+
+            function rodarLote() {
+                const restante = qtd - processados;
+                const rodarAgora = Math.min(restante, tamanhoLote);
+
+                for (let i = 0; i < rodarAgora; i++) {
+                    executarMaoSimulada();
+                }
+
+                processados += rodarAgora;
+                statusDiv.innerText = `Simulando: ${((processados / qtd) * 100).toFixed(0)}%...`;
+
+                if (processados < qtd) {
+                    setTimeout(rodarLote, 0);
+                } else {
+                    statusDiv.innerText = `Sucesso! +${qtd} simulações salvas.`;
+                    document.getElementById('btn-rodar-simulacao').disabled = false;
+                    if(jogoAtivo) {
+                        document.getElementById('btn-comprar').disabled = false;
+                        document.getElementById('btn-passar').disabled = false;
+                    }
+                    atualizarPlacar();
+                    atualizarPainelHistorial();
+                    setTimeout(() => { statusDiv.innerText = ''; }, 4000);
+                }
+            }
+            rodarLote();
+        }
+
+        function ejecutarMaoSimulada() {
+            if (baralho.length === 0) criarBaralho();
+
+            let sMaoJogador = [comprarCarta(), comprarCarta()];
+            let sMaoDealer = [comprarCarta(), comprarCarta()];
+
+            let pontosDealerExposto = valoresCartas[sMaoDealer[0].valor];
+            let pontosJogador = calcularPontos(sMaoJogador);
+            let resFinal = 'Empate';
+            let txtDetalhe = '';
+
+            if (pontosJogador === 21) {
+                let pontosDealerCompleto = calcularPontos(sMaoDealer);
+                if (pontosDealerCompleto === 21) {
+                    placar.empates++;
+                    resFinal = 'Empate';
+                    txtDetalhe = 'BJ Natural vs BJ Dealer';
+                } else {
+                    placar.vitorias++;
+                    resFinal = 'Vitoria';
+                    txtDetalhe = `BJ Natural (21) vs Dealer (${pontosDealerCompleto})`;
+                }
+                registrarFimDeRodada(resFinal);
+                historicoCompleto.push({
+                    origem: 'SIM', tipo: 'Mão Padrão', detalhe: txtDetalhe, res: resFinal,
+                    cartasJ: formatarCartasParaTexto(sMaoJogador), cartasD: formatarCartasParaTexto(sMaoDealer)
+                });
+                return;
+            }
+
+            // Estratégia Básica de Decisão da IA
+            while (pontosJogador < 21) {
+                let temAsForte = sMaoJogador.filter(c => c.valor === 'A').length > 0 && 
+                                 (sMaoJogador.reduce((t, c) => t + valoresCartas[c.valor], 0) <= 21);
+
+                if (temAsForte) { 
+                    if (pontosJogador <= 17) { sMaoJogador.push(comprarCarta()); } 
+                    else if (pontosJogador === 18 && pontosDealerExposto >= 9) { sMaoJogador.push(comprarCarta()); } 
+                    else { break; }
+                } else { 
+                    if (pontosJogador <= 11) { sMaoJogador.push(comprarCarta()); } 
+                    else if (pontosJogador === 12 && (pontosDealerExposto < 4 || pontosDealerExposto > 6)) { sMaoJogador.push(comprarCarta()); } 
+                    else if (pontosJogador >= 13 && pontosJogador <= 16 && pontosDealerExposto > 6) { sMaoJogador.push(comprarCarta()); } 
+                    else { break; }
+                }
+                pontosJogador = calcularPontos(sMaoJogador);
+            }
+
+            if (pontosJogador <= 21) {
+                while (calcularPontos(sMaoDealer) < 17) {
+                    sMaoDealer.push(comprarCarta());
+                }
+            }
+
+            let pontosFinaisDealer = calcularPontos(sMaoDealer);
+
+            if (pontosJogador > 21) {
+                placar.derrotas++; resFinal = 'Derrota';
+                txtDetalhe = `Estourou (${pontosJogador}) vs Dealer (${pontosFinaisDealer})`;
+            } else if (pontosFinaisDealer > 21) {
+                placar.vitorias++; resFinal = 'Vitoria';
+                txtDetalhe = `Jogador (${pontosJogador}) vs Dealer Estourou (${pontosFinaisDealer})`;
+            } else if (pontosJogador > pontosFinaisDealer) {
+                placar.vitorias++; resFinal = 'Vitoria';
+                txtDetalhe = `Jogador (${pontosJogador}) vs Dealer (${pontosFinaisDealer})`;
+            } else if (pontosJogador < pontosFinaisDealer) {
+                placar.derrotas++; resFinal = 'Derrota';
+                txtDetalhe = `Jogador (${pontosJogador}) vs Dealer (${pontosFinaisDealer})`;
+            } else {
+                placar.empates++; resFinal = 'Empate';
+                txtDetalhe = `Empate em ${pontosJogador}`;
+            }
+
+            registrarFimDeRodada(resFinal);
+
+            // Salvando no histórico global as informações da mão simulada com as cartas físicas calculadas
+            historicoCompleto.push({
+                origem: 'SIM',
+                tipo: 'Mão Padrão',
+                detalhe: txtDetalhe,
+                res: resFinal,
+                cartasJ: formatarCartasParaTexto(sMaoJogador),
+                cartasD: formatarCartasParaTexto(sMaoDealer)
+            });
+        }
+
+        window.onload = iniciarJogo;
+    </script>
+</body>
+</html>
