@@ -54,7 +54,6 @@
             max-width: 1000px;
         }
 
-        /* Mesa de Cassino */
         .mesa {
             display: flex;
             width: 100%;
@@ -68,7 +67,6 @@
             overflow: hidden;
         }
 
-        /* Linha divisória vertical */
         .mesa::before {
             content: "";
             position: absolute;
@@ -132,7 +130,6 @@
             box-sizing: border-box;
         }
 
-        /* Cartas com Margem Negativa para Overlap Controlado */
         .carta {
             width: 90px;
             height: 130px;
@@ -148,7 +145,6 @@
             animation: brotar 0.25s ease-out forwards;
         }
 
-        /* Aplica efeito cascata a partir da segunda carta */
         .carta + .carta {
             margin-left: -35px;
         }
@@ -246,7 +242,6 @@
             transform: scale(1.03);
         }
 
-        /* Dashboard Flexbox Responsivo */
         .dashboard-container {
             display: flex;
             gap: 20px;
@@ -403,7 +398,6 @@
             min-height: 16px;
         }
 
-        /* Custom Scrollbar para Painel Elegante */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
@@ -417,7 +411,6 @@
     <div id="resultado"></div>
 
     <div class="mesa">
-        <!-- LADO DO JOGADOR -->
         <div class="lado" id="lado-jogador">
             <div class="topo-lado">
                 <div class="indicador-mao" id="indicador-mao"></div>
@@ -432,7 +425,6 @@
             </div>
         </div>
 
-        <!-- LADO DO DEALER -->
         <div class="lado" id="lado-dealer">
             <div class="topo-lado">
                 <div class="cartas-container" id="cartas-dealer"></div>
@@ -444,9 +436,7 @@
 
     <button id="btn-reiniciar" onclick="iniciarJogo()">Jogar Novamente</button>
 
-    <!-- CONTAINER DA CENTRAL DE ESTATÍSTICAS E HISTÓRICO -->
     <div class="dashboard-container">
-        <!-- Painel de Estatísticas -->
         <div class="painel">
             <h2>Estatísticas e Controle</h2>
             <div class="stats-grid">
@@ -470,13 +460,12 @@
 
             <div class="simular-control">
                 <label style="font-size:11px; color:#bdc3c7; text-transform:uppercase; font-weight: bold;">Simulador Fast-Forward</label>
-                <input type="number" id="input-simulacao" value="1000" min="1" max="999999">
+                <input type="number" id="input-simulacao" value="100000" min="1" max="999999">
                 <button class="btn-simular" id="btn-rodar-simulacao" onclick="dispararSimulacao()">Simular Mãos</button>
                 <div id="loading-simulacao"></div>
             </div>
         </div>
 
-        <!-- Painel de Histórico Estruturado -->
         <div class="painel">
             <div class="painel-header-flex">
                 <h2>Histórico</h2>
@@ -489,8 +478,9 @@
     </div>
 
     <script>
-        const valoresCartas = {'2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 10, 'Q': 10, 'K': 10, 'A': 11};
-        const naipes = [
+        // Constantes do jogo
+        const VALORES_CARTAS = {'2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 10, 'Q': 10, 'K': 10, 'A': 11};
+        const NAIPES = [
             { simbolo: '♠', classe: 'preta' },
             { simbolo: '♥', classe: 'vermelha' },
             { simbolo: '♦', classe: 'vermelha' },
@@ -505,18 +495,17 @@
         let jogoAtivo = true;
 
         let placar = { vitorias: 0, derrotas: 0, empates: 0 };
-
-        // Estrutura unificada de Histórico Completo
         let historicoCompleto = []; 
         let streakAtualWin = 0;
         let streakAtualLoss = 0;
         let maxWinStreak = 0;
         let maxLossStreak = 0;
 
+        // Funções do baralho
         function criarBaralho() {
-            const modelosCartas = Object.keys(valoresCartas);
+            const modelosCartas = Object.keys(VALORES_CARTAS);
             baralho = [];
-            naipes.forEach(naipe => {
+            NAIPES.forEach(naipe => {
                 modelosCartas.forEach(valor => {
                     baralho.push({ valor: valor, simbolo: naipe.simbolo, classe: naipe.classe });
                 });
@@ -535,7 +524,7 @@
         }
 
         function calcularPontos(mao) {
-            let pontos = mao.reduce((total, carta) => total + valoresCartas[carta.valor], 0);
+            let pontos = mao.reduce((total, carta) => total + VALORES_CARTAS[carta.valor], 0);
             let aces = mao.filter(carta => carta.valor === 'A').length;
             while (pontos > 21 && aces > 0) {
                 pontos -= 10;
@@ -548,6 +537,7 @@
             return mao.length === 2 && mao[0].valor === mao[1].valor;
         }
 
+        // Funções de renderização
         function gerarHtmlCarta(carta, oculta = false) {
             if (oculta) return `<div class="carta oculta"></div>`;
             return `
@@ -614,7 +604,6 @@
             if(historicoCompleto.length === 0) return;
             
             container.innerHTML = '';
-            // Renderiza apenas as últimas 50 ocorrências na interface gráfica para evitar gargalo de processamento do navegador
             const exibidas = historicoCompleto.slice(-50).reverse();
             
             exibidas.forEach(reg => {
@@ -636,20 +625,19 @@
             });
         }
 
+        // Exportação CSV com colunas adicionais para análise
         function exportarParaCSV() {
             if (historicoCompleto.length === 0) return;
 
-            // Cabeçalho do arquivo CSV
-            let csvConteudo = "\uFEFF"; // Adiciona BOM para caracteres especiais como naipes funcionarem no Excel
-            csvConteudo += "Origem;Tipo;Resultado;Detalhes;Cartas Jogador;Cartas Dealer\n";
+            let csvConteudo = "\uFEFF";
+            // Adicionando colunas de pontos para facilitar análise no Python
+            csvConteudo += "ID;Origem;Tipo;Resultado;Detalhes;Cartas Jogador;Cartas Dealer;Pontos Jogador;Pontos Dealer;Carta Visivel Dealer\n";
 
-            // Transforma o array global de histórico completo em linhas do CSV
-            historicoCompleto.forEach(reg => {
-                let linha = `${reg.origem};${reg.tipo};${reg.res};${reg.detalhe};${reg.cartasJ};${reg.cartasD}`;
+            historicoCompleto.forEach((reg, idx) => {
+                let linha = `${idx + 1};${reg.origem};${reg.tipo};${reg.res};${reg.detalhe};${reg.cartasJ};${reg.cartasD};${reg.pontosJ};${reg.pontosD};${reg.cartaVisivelD}`;
                 csvConteudo += linha + "\n";
             });
 
-            // Geração física do download via Blob do Navegador
             const blob = new Blob([csvConteudo], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const linkDownload = document.createElement("a");
@@ -675,6 +663,7 @@
             }
         }
 
+        // Funções do jogo manual
         function iniciarJogo() {
             jogoAtivo = true;
             document.getElementById('resultado').innerHTML = '';
@@ -715,11 +704,6 @@
             mao.cartas.push(comprarCarta());
             atualizarMesa(true);
             verificarEstadoMaoAtual();
-        }
-
-        function pasar() {
-            // Alias para suportar clique
-            passar();
         }
 
         function passar() {
@@ -773,6 +757,7 @@
             const pontosDealer = calcularPontos(maoDealer);
             const resultadoDiv = document.getElementById('resultado');
             const linhas = [];
+            const cartaVisivelDealer = maoDealer[0].valor;
 
             maosJogador.forEach((mao, i) => {
                 const pontosJogador = calcularPontos(mao.cartas);
@@ -815,14 +800,16 @@
 
                 registrarFimDeRodada(resFinal);
 
-                // Salvando no Histórico com armazenamento completo de cartas clonadas
                 historicoCompleto.push({
                     origem: 'REAL',
                     tipo: tipoMaoLabel,
                     detalhe: txtDetalhe,
                     res: resFinal,
                     cartasJ: formatarCartasParaTexto([...mao.cartas]),
-                    cartasD: formatarCartasParaTexto([...maoDealer])
+                    cartasD: formatarCartasParaTexto([...maoDealer]),
+                    pontosJ: pontosJogador,
+                    pontosD: pontosDealer,
+                    cartaVisivelD: cartaVisivelDealer
                 });
             });
 
@@ -833,7 +820,141 @@
             document.getElementById('btn-reiniciar').style.display = 'block';
         }
 
-        /* ENGINE DE SIMULAÇÃO EVOLUÍDO (Fast-Forward Assíncrono com Histórico) */
+        // ESTRATÉGIA BÁSICA COMPLETA E CORRETA
+        function decidirJogadaEstrategiaBasica(pontosJogador, cartaVisivelDealer, temAsForte) {
+            const valorDealer = VALORES_CARTAS[cartaVisivelDealer];
+            
+            // Regras para hard hands (sem Ás valendo 11)
+            if (!temAsForte) {
+                if (pontosJogador <= 8) return 'comprar';
+                if (pontosJogador >= 17) return 'parar';
+                
+                // 12-16: depende da carta do dealer
+                if (pontosJogador >= 12 && pontosJogador <= 16) {
+                    // Dealer fraco (2-6): para
+                    if (valorDealer >= 2 && valorDealer <= 6) return 'parar';
+                    // Dealer forte (7-A): compra
+                    return 'comprar';
+                }
+                
+                // 9-11: regras especiais
+                if (pontosJogador === 9) {
+                    if (valorDealer >= 3 && valorDealer <= 6) return 'parar';
+                    return 'comprar';
+                }
+                if (pontosJogador === 10) {
+                    if (valorDealer >= 2 && valorDealer <= 9) return 'comprar';
+                    return 'parar';
+                }
+                if (pontosJogador === 11) {
+                    return 'comprar'; // sempre compra com 11
+                }
+            }
+            // Regras para soft hands (com Ás valendo 11)
+            else {
+                if (pontosJogador <= 17) return 'comprar';
+                if (pontosJogador === 18) {
+                    if (valorDealer >= 9 || valorDealer === 11) return 'comprar';
+                    return 'parar';
+                }
+                if (pontosJogador >= 19) return 'parar';
+            }
+            
+            return 'parar'; // fallback
+        }
+
+        // SIMULAÇÃO DE UMA MÃO COMPLETA
+        function executarMaoSimulada() {
+            if (baralho.length < 10) criarBaralho();
+
+            let maoJogador = [comprarCarta(), comprarCarta()];
+            let maoDealer = [comprarCarta(), comprarCarta()];
+
+            const cartaVisivelDealer = maoDealer[0].valor;
+            let pontosJogador = calcularPontos(maoJogador);
+            let pontosDealer = calcularPontos(maoDealer);
+            let resFinal = 'Empate';
+            let txtDetalhe = '';
+
+            // Verifica blackjack natural
+            const bjJogador = maoJogador.length === 2 && pontosJogador === 21;
+            const bjDealer = maoDealer.length === 2 && pontosDealer === 21;
+
+            if (bjJogador && !bjDealer) {
+                placar.vitorias++;
+                resFinal = 'Vitoria';
+                txtDetalhe = `BJ Natural (21) vs Dealer (${pontosDealer})`;
+            } else if (bjDealer && !bjJogador) {
+                placar.derrotas++;
+                resFinal = 'Derrota';
+                txtDetalhe = `Jogador (${pontosJogador}) vs BJ Dealer (21)`;
+            } else if (bjJogador && bjDealer) {
+                placar.empates++;
+                resFinal = 'Empate';
+                txtDetalhe = `BJ Natural vs BJ Dealer (Empate)`;
+            } else {
+                // Vez do jogador - segue estratégia básica
+                while (pontosJogador < 21) {
+                    const temAsForte = maoJogador.some(c => c.valor === 'A') && 
+                                      calcularPontos(maoJogador) <= 21 &&
+                                      maoJogador.reduce((t, c) => t + VALORES_CARTAS[c.valor], 0) > calcularPontos(maoJogador);
+                    
+                    const acao = decidirJogadaEstrategiaBasica(pontosJogador, cartaVisivelDealer, temAsForte);
+                    
+                    if (acao === 'parar') break;
+                    maoJogador.push(comprarCarta());
+                    pontosJogador = calcularPontos(maoJogador);
+                }
+
+                // Vez do dealer (só se jogador não estourou)
+                if (pontosJogador <= 21) {
+                    while (calcularPontos(maoDealer) < 17) {
+                        maoDealer.push(comprarCarta());
+                    }
+                    pontosDealer = calcularPontos(maoDealer);
+                }
+
+                // Determina resultado
+                if (pontosJogador > 21) {
+                    placar.derrotas++;
+                    resFinal = 'Derrota';
+                    txtDetalhe = `Estourou (${pontosJogador}) vs Dealer (${pontosDealer})`;
+                } else if (pontosDealer > 21) {
+                    placar.vitorias++;
+                    resFinal = 'Vitoria';
+                    txtDetalhe = `Jogador (${pontosJogador}) vs Dealer Estourou (${pontosDealer})`;
+                } else if (pontosJogador > pontosDealer) {
+                    placar.vitorias++;
+                    resFinal = 'Vitoria';
+                    txtDetalhe = `Jogador (${pontosJogador}) vs Dealer (${pontosDealer})`;
+                } else if (pontosJogador < pontosDealer) {
+                    placar.derrotas++;
+                    resFinal = 'Derrota';
+                    txtDetalhe = `Jogador (${pontosJogador}) vs Dealer (${pontosDealer})`;
+                } else {
+                    placar.empates++;
+                    resFinal = 'Empate';
+                    txtDetalhe = `Empate em ${pontosJogador}`;
+                }
+            }
+
+            registrarFimDeRodada(resFinal);
+
+            // Salva no histórico com TODAS as informações necessárias
+            historicoCompleto.push({
+                origem: 'SIM',
+                tipo: 'Mão Padrão',
+                detalhe: txtDetalhe,
+                res: resFinal,
+                cartasJ: formatarCartasParaTexto(maoJogador),
+                cartasD: formatarCartasParaTexto(maoDealer),
+                pontosJ: pontosJogador,
+                pontosD: pontosDealer,
+                cartaVisivelD: cartaVisivelDealer
+            });
+        }
+
+        // SIMULAÇÃO EM LOTE ASSÍNCRONA
         function dispararSimulacao() {
             const input = document.getElementById('input-simulacao');
             let qtd = parseInt(input.value);
@@ -847,8 +968,9 @@
             document.getElementById('btn-passar').disabled = true;
             
             let processados = 0;
-            const tamanhoLote = 25000; 
+            const tamanhoLote = 10000; // Lotes menores para não travar
             const statusDiv = document.getElementById('loading-simulacao');
+            const tempoInicio = Date.now();
 
             function rodarLote() {
                 const restante = qtd - processados;
@@ -859,12 +981,15 @@
                 }
 
                 processados += rodarAgora;
-                statusDiv.innerText = `Simulando: ${((processados / qtd) * 100).toFixed(0)}%...`;
+                const progresso = ((processados / qtd) * 100).toFixed(1);
+                const tempoDecorrido = ((Date.now() - tempoInicio) / 1000).toFixed(1);
+                statusDiv.innerText = `Simulando: ${progresso}% (${processados.toLocaleString('pt-BR')}/${qtd.toLocaleString('pt-BR')}) - ${tempoDecorrido}s`;
 
                 if (processados < qtd) {
                     setTimeout(rodarLote, 0);
                 } else {
-                    statusDiv.innerText = `Sucesso! +${qtd} simulações salvas.`;
+                    const tempoTotal = ((Date.now() - tempoInicio) / 1000).toFixed(2);
+                    statusDiv.innerText = `✅ Sucesso! ${qtd.toLocaleString('pt-BR')} simulações em ${tempoTotal}s`;
                     document.getElementById('btn-rodar-simulacao').disabled = false;
                     if(jogoAtivo) {
                         document.getElementById('btn-comprar').disabled = false;
@@ -872,96 +997,10 @@
                     }
                     atualizarPlacar();
                     atualizarPainelHistorial();
-                    setTimeout(() => { statusDiv.innerText = ''; }, 4000);
+                    setTimeout(() => { statusDiv.innerText = ''; }, 5000);
                 }
             }
             rodarLote();
-        }
-
-        function ejecutarMaoSimulada() {
-            if (baralho.length === 0) criarBaralho();
-
-            let sMaoJogador = [comprarCarta(), comprarCarta()];
-            let sMaoDealer = [comprarCarta(), comprarCarta()];
-
-            let pontosDealerExposto = valoresCartas[sMaoDealer[0].valor];
-            let pontosJogador = calcularPontos(sMaoJogador);
-            let resFinal = 'Empate';
-            let txtDetalhe = '';
-
-            if (pontosJogador === 21) {
-                let pontosDealerCompleto = calcularPontos(sMaoDealer);
-                if (pontosDealerCompleto === 21) {
-                    placar.empates++;
-                    resFinal = 'Empate';
-                    txtDetalhe = 'BJ Natural vs BJ Dealer';
-                } else {
-                    placar.vitorias++;
-                    resFinal = 'Vitoria';
-                    txtDetalhe = `BJ Natural (21) vs Dealer (${pontosDealerCompleto})`;
-                }
-                registrarFimDeRodada(resFinal);
-                historicoCompleto.push({
-                    origem: 'SIM', tipo: 'Mão Padrão', detalhe: txtDetalhe, res: resFinal,
-                    cartasJ: formatarCartasParaTexto(sMaoJogador), cartasD: formatarCartasParaTexto(sMaoDealer)
-                });
-                return;
-            }
-
-            // Estratégia Básica de Decisão da IA
-            while (pontosJogador < 21) {
-                let temAsForte = sMaoJogador.filter(c => c.valor === 'A').length > 0 && 
-                                 (sMaoJogador.reduce((t, c) => t + valoresCartas[c.valor], 0) <= 21);
-
-                if (temAsForte) { 
-                    if (pontosJogador <= 17) { sMaoJogador.push(comprarCarta()); } 
-                    else if (pontosJogador === 18 && pontosDealerExposto >= 9) { sMaoJogador.push(comprarCarta()); } 
-                    else { break; }
-                } else { 
-                    if (pontosJogador <= 11) { sMaoJogador.push(comprarCarta()); } 
-                    else if (pontosJogador === 12 && (pontosDealerExposto < 4 || pontosDealerExposto > 6)) { sMaoJogador.push(comprarCarta()); } 
-                    else if (pontosJogador >= 13 && pontosJogador <= 16 && pontosDealerExposto > 6) { sMaoJogador.push(comprarCarta()); } 
-                    else { break; }
-                }
-                pontosJogador = calcularPontos(sMaoJogador);
-            }
-
-            if (pontosJogador <= 21) {
-                while (calcularPontos(sMaoDealer) < 17) {
-                    sMaoDealer.push(comprarCarta());
-                }
-            }
-
-            let pontosFinaisDealer = calcularPontos(sMaoDealer);
-
-            if (pontosJogador > 21) {
-                placar.derrotas++; resFinal = 'Derrota';
-                txtDetalhe = `Estourou (${pontosJogador}) vs Dealer (${pontosFinaisDealer})`;
-            } else if (pontosFinaisDealer > 21) {
-                placar.vitorias++; resFinal = 'Vitoria';
-                txtDetalhe = `Jogador (${pontosJogador}) vs Dealer Estourou (${pontosFinaisDealer})`;
-            } else if (pontosJogador > pontosFinaisDealer) {
-                placar.vitorias++; resFinal = 'Vitoria';
-                txtDetalhe = `Jogador (${pontosJogador}) vs Dealer (${pontosFinaisDealer})`;
-            } else if (pontosJogador < pontosFinaisDealer) {
-                placar.derrotas++; resFinal = 'Derrota';
-                txtDetalhe = `Jogador (${pontosJogador}) vs Dealer (${pontosFinaisDealer})`;
-            } else {
-                placar.empates++; resFinal = 'Empate';
-                txtDetalhe = `Empate em ${pontosJogador}`;
-            }
-
-            registrarFimDeRodada(resFinal);
-
-            // Salvando no histórico global as informações da mão simulada com as cartas físicas calculadas
-            historicoCompleto.push({
-                origem: 'SIM',
-                tipo: 'Mão Padrão',
-                detalhe: txtDetalhe,
-                res: resFinal,
-                cartasJ: formatarCartasParaTexto(sMaoJogador),
-                cartasD: formatarCartasParaTexto(sMaoDealer)
-            });
         }
 
         window.onload = iniciarJogo;
